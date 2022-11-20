@@ -5,9 +5,9 @@ Installation
 
 This extension can be installed with:
 
-```
-pip install sphinx_panel_screenshot
-```
+.. code-block:: python
+   
+   pip install sphinx_panel_screenshot
 
 It will install the following requirements: panel, selenium, webdriver_manager,
 sphinx, pillow.
