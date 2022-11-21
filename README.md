@@ -1,7 +1,7 @@
 # sphinx_panel_screenshot
 
 [![PyPI version](https://badge.fury.io/py/sphinx-panel-screenshot.svg)](https://badge.fury.io/py/sphinx-panel-screenshot)
-![Conda (channel only)](https://img.shields.io/conda/vn/davide_sd/sphinx_panel_screenshot?color=%2340BA12&label=conda%20package)
+[![Conda (channel only)](https://img.shields.io/conda/vn/davide_sd/sphinx_panel_screenshot?color=%2340BA12&label=conda%20package)](https://anaconda.org/Davide_sd/sphinx_panel_screenshot)
 [![Documentation Status](https://readthedocs.org/projects/sphinx-panel-screenshot/badge/?version=latest)](https://sphinx-panel-screenshot.readthedocs.io/en/latest/?badge=latest)
 
 A Sphinx directive for including the screenshot of an holoviz's panel widget
