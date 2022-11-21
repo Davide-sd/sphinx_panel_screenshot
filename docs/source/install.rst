@@ -1,13 +1,17 @@
 Installation
 ------------
 
-
-
 This extension can be installed with:
 
 .. code-block:: python
    
    pip install sphinx_panel_screenshot
+
+or with:
+
+.. code-block:: python
+   
+   conda install -c davide_sd sphinx_panel_screenshot 
 
 It will install the following requirements: panel, selenium, webdriver_manager,
 sphinx, pillow.
@@ -23,9 +27,14 @@ Configuring the extension
 The configuration depends on the machine in which the extension will be
 executed.
 
-If the extension is going to be executed on a `readthedocs.org <https://readthedocs.org/>`_ server, then the intended browser (Firefox or Chrome) and
-the respective driver (`geckodriver <https://github.com/mozilla/geckodriver>`_ or `webdriver <https://chromedriver.chromium.org/downloads>`_ ) must be downloaded. This can be achieved by customizing the build. For example,
-the ``.readthedocs.yml`` used by this extension is:
+The extension uses `selenium` to automate the process of generating screenshots,
+which requires a web browser and a driver. User needs to install the intended browser (Firefox or Chrome) and the respective driver
+(`geckodriver <https://github.com/mozilla/geckodriver>`_ or
+`webdriver <https://chromedriver.chromium.org/downloads>`_ )
+
+If the extension is going to be executed on a `readthedocs.org <https://readthedocs.org/>`_ server, then setting up the browser and driver can be done
+by customizing the build. For example, the ``.readthedocs.yml`` used by this
+extension is:
 
 .. literalinclude:: ../../.readthedocs.yml
    :language: yaml
