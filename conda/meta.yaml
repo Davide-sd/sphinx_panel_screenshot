@@ -19,7 +19,7 @@ requirements:
     - python
     - panel
     - selenium
-    - webdriver
+    - webdriver-manager
     - sphinx
     - pillow
     # - hvplot
