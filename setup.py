@@ -18,7 +18,7 @@ setup(
     long_description_content_type="text/markdown",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
-        "License :: OSI Approved :: BSD License",
+        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3.10",
         "Topic :: Documentation",
         "Topic :: Documentation :: Sphinx",
@@ -27,7 +27,7 @@ setup(
     url="https://github.com/Davide-sd/sphinx_panel_screenshot",
     author="Davide Sandona",
     author_email="sandona.davide@gmail.com",
-    license="BSD License",
+    license="MIT License",
     packages=find_packages(exclude=("tests", )),
     include_package_data=True,
     zip_safe=False,

@@ -9,4 +9,6 @@ dependencies:
   - panel
   - sphinx
   - pillow
-  - hvplot
+  - pip
+  - pip:
+    - -e .
