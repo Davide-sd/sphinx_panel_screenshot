@@ -1,7 +1,7 @@
 # sphinx_panel_screenshot
 
-[![PyPI version](https://badge.fury.io/py/sympy-plot-backends.svg)](https://badge.fury.io/py/sympy-plot-backends)
-[![Install with conda](https://anaconda.org/davide_sd/sympy_plot_backends/badges/installer/conda.svg)](https://anaconda.org/Davide_sd/sympy_plot_backends)
+[![PyPI version](https://badge.fury.io/py/sphinx-panel-screenshot.svg)](https://badge.fury.io/py/sphinx-panel-screenshot)
+[![Install with conda](https://anaconda.org/davide_sd/sphinx_panel_screenshot/badges/installer/conda.svg)](https://anaconda.org/Davide_sd/sphinx_panel_screenshot)
 [![Documentation Status](https://readthedocs.org/projects/sphinx-panel-screenshot/badge/?version=latest)](https://sphinx-panel-screenshot.readthedocs.io/en/latest/?badge=latest)
 
 A Sphinx directive for including the screenshot of an holoviz's panel widget
@@ -13,6 +13,12 @@ _**This package is based on [matplotlib's plot directive](https://matplotlib.org
 
 ```
 pip install sphinx_panel_screenshot
+```
+
+or:
+
+```
+conda install -c davide_sd sphinx_panel_screenshot 
 ```
 
 Take a look at the [Installation page](https://sphinx-panel-screenshot.readthedocs.io/en/latest/install.html)
