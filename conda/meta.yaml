@@ -1,0 +1,35 @@
+{% set data = load_setup_py_data() %}
+
+package:
+  name: "sphinx_panel_screenshot"
+  version: {{ data['version'] }}
+
+source:
+  path: ..
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - panel
+    - selenium
+    - webdriver
+    - sphinx
+    - pillow
+    # - hvplot
+
+about:
+  home: {{ data['url'] }}
+  license: {{ data['license'] }}
+  license_family: MIT
+  license_file: 
+  summary: {{ data['description'] }}
+  doc_url: 
+  dev_url: 
+
