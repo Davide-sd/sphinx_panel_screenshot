@@ -16,7 +16,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        # skipt "3.8" because on that version the `ast` module didn't expose
+        # the unparse method.
+        # AttributeError: module 'ast' has no attribute 'unparse'
+        python-version: ["3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v3
