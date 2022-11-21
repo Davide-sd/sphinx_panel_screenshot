@@ -1,0 +1,12 @@
+name: myenv
+channels:
+  - anaconda
+  - conda-forge
+  - pyviz
+dependencies:
+  - selenium
+  - webdriver-manager
+  - panel
+  - sphinx
+  - pillow
+  - hvplot
