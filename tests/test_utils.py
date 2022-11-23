@@ -20,7 +20,7 @@ def test_assign_last_line_into_variable_2():
     assert new_code != code
     assert "mypanel" in new_code
 
-def test_assign_last_line_into_variable_2():
+def test_assign_last_line_into_variable_3():
     # the last line of code is of the type expression.servable()
     code = "plot_something(1, 2, kw1=True, kw2=False).servable()"
     new_code = assign_last_line_into_variable(code)

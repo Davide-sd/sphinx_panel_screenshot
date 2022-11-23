@@ -27,9 +27,8 @@ The source code for the panel application may be included in one of three ways:
 
      .. panel-screenshot::
 
-        A plotting example:
-        >>> import matplotlib.pyplot as plt
-        >>> plt.plot([1, 2, 3], [4, 5, 6])
+        >>> import panel as pn
+        >>> pn.widgets.FloatSlider(start=0, end=2, value=0.5, name="Float Slider")
 
 3. Using **code block** syntax::
 
@@ -508,24 +507,6 @@ def get_panel_screenshot_formats(config):
     return formats
 
 
-def _split_code_at_show(text):
-    """Split code at plt.show()."""
-    parts = []
-    is_doctest = contains_doctest(text)
-    part = []
-    for line in text.split("\n"):
-        if (not is_doctest and line.strip() == 'plt.show()') or \
-               (is_doctest and line.strip() == '>>> plt.show()'):
-            part.append(line)
-            parts.append("\n".join(part))
-            part = []
-        else:
-            part.append(line)
-    if "\n".join(part).strip():
-        parts.append("\n".join(part))
-    return is_doctest, parts
-
-
 def render_figures(code, code_path, output_dir, output_base, context,
                    function_name, config, context_reset=False,
                    close_figs=False,
@@ -537,7 +518,6 @@ def render_figures(code, code_path, output_dir, output_base, context,
     *output_base*
     """
     formats = get_panel_screenshot_formats(config)
-    is_doctest, code_pieces = _split_code_at_show(code)
     is_doctest = contains_doctest(code)
 
     # Try to determine if all images already exist
