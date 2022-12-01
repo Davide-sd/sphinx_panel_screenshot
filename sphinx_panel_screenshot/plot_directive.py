@@ -155,6 +155,10 @@ The panel-screenshot directive has the following configuration options:
     panel_screenshot_driver_path : str or None
         Specify the path to the driver executable. If not provided, selenium
         will attempt to execute the driver from the system path.
+    
+    panel_screenshot_pdf_from : str
+        The PDF file will include the specified screenshot. Default to
+        ``"large.png"``
 """
 
 import doctest
@@ -292,6 +296,7 @@ def setup(app):
     app.add_config_value("panel_screenshot_browser_path", None, True)
     app.add_config_value("panel_screenshot_driver_path", None, True)
     app.add_config_value("panel_screenshot_browser", None, True)
+    app.add_config_value("panel_screenshot_pdf_from", None, True)
     app.connect('doctree-read', mark_plot_labels)
     metadata = {'parallel_read_safe': True, 'parallel_write_safe': True,
                 'version': sphinx_panel_screenshot.__version__}
@@ -485,7 +490,7 @@ def _run_code(code, code_path, ns=None, function_name=None):
 
 
 def get_panel_screenshot_formats(config):
-    default_dpi = {'small.png': 80, 'large.png': 200, 'pdf': None, 'html': None}
+    default_dpi = {'small.png': 80, 'large.png': 200, 'pdf': 150, 'html': None}
     formats = []
     panel_screenshot_formats = config.panel_screenshot_formats
     for fmt in panel_screenshot_formats:
@@ -507,6 +512,44 @@ def get_panel_screenshot_formats(config):
     return formats
 
 
+def get_pdf_from(config):
+    pdf_from = config.panel_screenshot_pdf_from
+    if pdf_from not in ["small.png", "large.png"]:
+        return "large.png"
+    return pdf_from
+
+
+def get_driver(browser, browser_path, driver_path):
+    if (browser is None) or (browser == "chrome"):
+        options = webdriver.ChromeOptions()
+        options.headless = True
+        options.add_argument("--disable-dev-shm-usage"); # overcome limited resource problems
+        options.add_argument("--no-sandbox") # Bypass OS security model
+        if driver_path is not None:
+            driver_path = driver_path
+        else:
+            driver_path = ChromeDriverManager().install()
+        service = ChromeService(driver_path)
+        Browser = webdriver.Chrome
+    else:
+        options = webdriver.FirefoxOptions()
+        # options.headless = True   # doesn't work...
+        options.add_argument("--headless")
+        if driver_path is not None:
+            driver_path = driver_path
+        else:
+            driver_path = GeckoDriverManager().install()
+        service = FirefoxService(driver_path)
+        Browser = webdriver.Firefox
+    
+    if browser_path is not None:
+        options.binary_location = browser_path
+
+    driver = Browser(service=service, options=options)
+    driver.set_window_position(0, 0)
+    return driver
+
+
 def render_figures(code, code_path, output_dir, output_base, context,
                    function_name, config, context_reset=False,
                    close_figs=False,
@@ -519,6 +562,8 @@ def render_figures(code, code_path, output_dir, output_base, context,
     """
     formats = get_panel_screenshot_formats(config)
     is_doctest = contains_doctest(code)
+    remove_html_file = not any(k[0] == "html" for k in formats)
+    pdf_from = get_pdf_from(config)
 
     # Try to determine if all images already exist
     # Look for single-figure output files first
@@ -594,45 +639,18 @@ def render_figures(code, code_path, output_dir, output_base, context,
 
         # first, save html
         panel_obj.save(img.filename("html"))
-
-        # generate pictures
-        if ((setup.config.panel_screenshot_browser is None) or
-            (setup.config.panel_screenshot_browser == "chrome")):
-            options = webdriver.ChromeOptions()
-            options.headless = True
-            options.add_argument("--disable-dev-shm-usage"); # overcome limited resource problems
-            options.add_argument("--no-sandbox") # Bypass OS security model
-            if setup.config.panel_screenshot_driver_path is not None:
-                driver_path = setup.config.panel_screenshot_driver_path
-            else:
-                driver_path = ChromeDriverManager().install()
-            service = ChromeService(driver_path)
-            Browser = webdriver.Chrome
-        else:
-            options = webdriver.FirefoxOptions()
-            # options.headless = True   # doesn't work...
-            options.add_argument("--headless")
-            if setup.config.panel_screenshot_driver_path is not None:
-                driver_path = setup.config.panel_screenshot_driver_path
-            else:
-                driver_path = GeckoDriverManager().install()
-            service = FirefoxService(driver_path)
-            Browser = webdriver.Firefox
-
-        
-        if setup.config.panel_screenshot_browser_path is not None:
-            options.binary_location = setup.config.panel_screenshot_browser_path
-
-        # define a headless browser
-        driver = Browser(service=service, options=options)
+        driver = get_driver(
+                setup.config.panel_screenshot_browser,
+                setup.config.panel_screenshot_browser_path,
+                setup.config.panel_screenshot_driver_path
+            )
         driver.set_window_position(0, 0)
         # load html file into the browser
         driver.get('file://' + img.filename("html"))
-        
         pil_image = None
         spng, lpng, pdf, html = "small.png", "large.png", "pdf", "html"
         
-        if (spng in fmts) or (pdf in fmts):
+        if (spng in fmts) or (pdf_from == spng):
             driver.set_window_size(*small_size)
             png = driver.get_screenshot_as_png()
             pil_image = PILImage.open(BytesIO(png))
@@ -641,7 +659,7 @@ def render_figures(code, code_path, output_dir, output_base, context,
                 pil_image.save(img.filename(spng), dpi=(dpi, dpi))
                 img.formats.append(spng)
 
-        if (lpng in fmts) or (pdf in fmts):
+        if (lpng in fmts) or (pdf_from == lpng):
             driver.set_window_size(*large_size)
             png = driver.get_screenshot_as_png()
             pil_image = PILImage.open(BytesIO(png))
@@ -654,9 +672,15 @@ def render_figures(code, code_path, output_dir, output_base, context,
             img.formats.append(html)
 
         if pdf in fmts:
-            pil_image.convert('RGB').save(img.filename(pdf))
+            dpi = formats[pdf]
+            kw = {}
+            if dpi is not None:
+                kw["resolution"] = dpi
+            pil_image.convert('RGB').save(img.filename(pdf), **kw)
             img.formats.append(pdf)
         
+        if remove_html_file:
+            os.remove(img.filename("html"))
         driver.quit()
     except Exception as err:
         raise PlotError(traceback.format_exc()) from err
