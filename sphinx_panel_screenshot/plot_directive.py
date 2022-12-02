@@ -647,7 +647,7 @@ def render_figures(code, code_path, output_dir, output_base, context,
         driver.set_window_position(0, 0)
         # load html file into the browser
         driver.get('file://' + img.filename("html"))
-        pil_image = None
+        pil_pdf_image = None
         spng, lpng, pdf, html = "small.png", "large.png", "pdf", "html"
         
         if (spng in fmts) or (pdf_from == spng):
@@ -658,6 +658,8 @@ def render_figures(code, code_path, output_dir, output_base, context,
                 dpi = formats[spng]
                 pil_image.save(img.filename(spng), dpi=(dpi, dpi))
                 img.formats.append(spng)
+            if pdf_from == spng:
+                pil_pdf_image = pil_image
 
         if (lpng in fmts) or (pdf_from == lpng):
             driver.set_window_size(*large_size)
@@ -667,16 +669,18 @@ def render_figures(code, code_path, output_dir, output_base, context,
                 dpi = formats[lpng]
                 pil_image.save(img.filename(lpng), dpi=(dpi, dpi))
                 img.formats.append(lpng)
+            if pdf_from == lpng:
+                pil_pdf_image = pil_image
         
         if html in fmts:
             img.formats.append(html)
 
-        if pdf in fmts:
+        if (pdf in fmts) and (pil_pdf_image is not None):
             dpi = formats[pdf]
             kw = {}
             if dpi is not None:
                 kw["resolution"] = dpi
-            pil_image.convert('RGB').save(img.filename(pdf), **kw)
+            pil_pdf_image.convert('RGB').save(img.filename(pdf), **kw)
             img.formats.append(pdf)
         
         if remove_html_file:

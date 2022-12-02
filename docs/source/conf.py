@@ -65,3 +65,5 @@ panel_screenshot_browser = "chrome"
 home_folder = os.path.expanduser("~")
 panel_screenshot_browser_path = os.path.join(home_folder, "selenium/chrome-linux/chrome")
 panel_screenshot_driver_path = os.path.join(home_folder, "selenium/drivers/chromedriver")
+panel_screenshot_pdf_from = "small.png"
+panel_screenshot_formats = ["small.png", "large.png", ("pdf", 120), "html"]
