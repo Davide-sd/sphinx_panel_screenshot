@@ -28,13 +28,15 @@ The configuration depends on the machine in which the extension will be
 executed.
 
 The extension uses `selenium` to automate the process of generating screenshots,
-which requires a web browser and a driver. User needs to install the intended browser (Firefox or Chrome) and the respective driver
+which requires a web browser and a driver. User needs to install the intended
+browser (Firefox or Chrome) and the respective driver
 (`geckodriver <https://github.com/mozilla/geckodriver>`_ or
 `webdriver <https://chromedriver.chromium.org/downloads>`_ )
 
-If the extension is going to be executed on a `readthedocs.org <https://readthedocs.org/>`_ server, then setting up the browser and driver can be done
-by customizing the build. For example, the ``.readthedocs.yml`` used by this
-extension is:
+If the extension is going to be executed on a
+`readthedocs.org <https://readthedocs.org/>`_ server, then setting up the
+browser and driver can be done by customizing the build.
+For example, the ``.readthedocs.yml`` used by this extension is:
 
 .. literalinclude:: ../../.readthedocs.yml
    :language: yaml
@@ -55,3 +57,8 @@ variables:
     home_folder = os.path.expanduser("~")
     panel_screenshot_browser_path = os.path.join(home_folder, "selenium/chrome-linux/chrome")
     panel_screenshot_driver_path = os.path.join(home_folder, "selenium/drivers/chromedriver")
+    panel_screenshot_driver_options = [
+       "--headless",
+       "--disable-dev-shm-usage",  # overcome limited resource problems
+       "--no-sandbox"              # Bypass OS security model
+    ]

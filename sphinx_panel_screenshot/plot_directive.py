@@ -156,9 +156,24 @@ The panel-screenshot directive has the following configuration options:
         Specify the path to the driver executable. If not provided, selenium
         will attempt to execute the driver from the system path.
     
+    panel_screenshot_driver_options : list/tuple
+        A list of strings to be added to the browser options with the
+        ``add_argument`` method. Default to empty list.
+    
+    panel_screenshot_modify_driver : callable or None
+        A user-defined function, f(driver), to further customize the browser
+        behavior before taking a new screenshot.
+    
     panel_screenshot_pdf_from : str
         The PDF file will include the specified screenshot. Default to
         ``"large.png"``
+    
+
+    panel_screenshot_logging_path : str, optional
+        Default to ``/home/selenium/sphinx_panel_screenshot.log``
+    
+    panel_screenshot_logging_level : 
+        Default to logging.INFO.
 """
 
 import doctest
@@ -177,16 +192,12 @@ from docutils.parsers.rst.directives.images import Image
 import jinja2  # Sphinx dependency.
 
 import sphinx_panel_screenshot
-from sphinx_panel_screenshot.utils import assign_last_line_into_variable
-
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.firefox import GeckoDriverManager
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.firefox.service import Service as FirefoxService
+from sphinx_panel_screenshot.utils import (
+    assign_last_line_into_variable, get_driver, set_size
+)
 from PIL import Image as PILImage
 from io import BytesIO
-
+import logging
 
 # -----------------------------------------------------------------------------
 # Registration hook
@@ -295,8 +306,12 @@ def setup(app):
     app.add_config_value("panel_screenshot_large_size", None, True)
     app.add_config_value("panel_screenshot_browser_path", None, True)
     app.add_config_value("panel_screenshot_driver_path", None, True)
+    app.add_config_value("panel_screenshot_driver_options", None, [])
+    app.add_config_value("panel_screenshot_modify_driver", None, None)
     app.add_config_value("panel_screenshot_browser", None, True)
     app.add_config_value("panel_screenshot_pdf_from", None, True)
+    app.add_config_value("panel_screenshot_logging_path", None, True)
+    app.add_config_value("panel_screenshot_logging_level", None, True)
     app.connect('doctree-read', mark_plot_labels)
     metadata = {'parallel_read_safe': True, 'parallel_write_safe': True,
                 'version': sphinx_panel_screenshot.__version__}
@@ -434,6 +449,9 @@ def _run_code(code, code_path, ns=None, function_name=None):
     Import a Python module from a path, and run the function given by
     name, if function_name is not None.
     """
+    logging.info("Input code:")
+    logging.info("\n%s" % code)
+
     intercept_code = setup.config.panel_screenshot_intercept_code
     if intercept_code is None:
         intercept_code = lambda x: x
@@ -481,6 +499,9 @@ def _run_code(code, code_path, ns=None, function_name=None):
         exec(code, ns)
         if function_name is not None:
             exec("mypanel = " + function_name + "()", ns)
+        
+        logging.info("Modified code:")
+        logging.info("\n%s" % code)
 
     except (Exception, SystemExit) as err:
         raise PlotError(traceback.format_exc()) from err
@@ -519,37 +540,6 @@ def get_pdf_from(config):
     return pdf_from
 
 
-def get_driver(browser, browser_path, driver_path):
-    if (browser is None) or (browser == "chrome"):
-        options = webdriver.ChromeOptions()
-        options.headless = True
-        options.add_argument("--disable-dev-shm-usage"); # overcome limited resource problems
-        options.add_argument("--no-sandbox") # Bypass OS security model
-        if driver_path is not None:
-            driver_path = driver_path
-        else:
-            driver_path = ChromeDriverManager().install()
-        service = ChromeService(driver_path)
-        Browser = webdriver.Chrome
-    else:
-        options = webdriver.FirefoxOptions()
-        # options.headless = True   # doesn't work...
-        options.add_argument("--headless")
-        if driver_path is not None:
-            driver_path = driver_path
-        else:
-            driver_path = GeckoDriverManager().install()
-        service = FirefoxService(driver_path)
-        Browser = webdriver.Firefox
-    
-    if browser_path is not None:
-        options.binary_location = browser_path
-
-    driver = Browser(service=service, options=options)
-    driver.set_window_position(0, 0)
-    return driver
-
-
 def render_figures(code, code_path, output_dir, output_base, context,
                    function_name, config, context_reset=False,
                    close_figs=False,
@@ -560,10 +550,8 @@ def render_figures(code, code_path, output_dir, output_base, context,
     Save the images under *output_dir* with file names derived from
     *output_base*
     """
-    formats = get_panel_screenshot_formats(config)
     is_doctest = contains_doctest(code)
-    remove_html_file = not any(k[0] == "html" for k in formats)
-    pdf_from = get_pdf_from(config)
+    formats = get_panel_screenshot_formats(config)
 
     # Try to determine if all images already exist
     # Look for single-figure output files first
@@ -604,7 +592,6 @@ def render_figures(code, code_path, output_dir, output_base, context,
 
     # We didn't find the files, so build them
 
-    results = []
     ns = plot_context if context else {}
 
     if context_reset:
@@ -616,22 +603,22 @@ def render_figures(code, code_path, output_dir, output_base, context,
 
     # retrieve the panel object
     panel_obj = ns["mypanel"]
-
-    def set_size(t, default_size):
-        if not isinstance(t, (tuple, list)):
-            if isinstance(t, int):
-                return [t, t]
-            return default_size
-        if len(t) == 1:
-            return [t[0], t[0]]
-        return t
-    if small_size is None:
-        small_size = set_size(setup.config.panel_screenshot_small_size, [512, 384])
-    if large_size is None:
-        large_size = set_size(setup.config.panel_screenshot_large_size, [1280, 960])
-
     img = ImageFile(output_base, output_dir)
-    
+    img = create_images(panel_obj, img, config, formats, small_size, large_size)
+    return [(code, [img])]
+
+
+def create_images(panel_obj, img, config, formats, small_size, large_size):
+    remove_html_file = not any(k[0] == "html" for k in formats)
+    pdf_from = get_pdf_from(config)
+
+    if small_size is None:
+        small_size = set_size(
+            setup.config.panel_screenshot_small_size, [512, 384])
+    if large_size is None:
+        large_size = set_size(
+            setup.config.panel_screenshot_large_size, [1280, 960])
+
     try:
         # TODO: can it be done better?
         fmts = [t[0] for t in formats]
@@ -640,10 +627,13 @@ def render_figures(code, code_path, output_dir, output_base, context,
         # first, save html
         panel_obj.save(img.filename("html"))
         driver = get_driver(
-                setup.config.panel_screenshot_browser,
-                setup.config.panel_screenshot_browser_path,
-                setup.config.panel_screenshot_driver_path
-            )
+            setup.config.panel_screenshot_browser,
+            setup.config.panel_screenshot_browser_path,
+            setup.config.panel_screenshot_driver_path,
+            setup.config.panel_screenshot_driver_options
+        )
+        if setup.config.panel_screenshot_modify_driver:
+            setup.config.panel_screenshot_modify_driver(driver)
         driver.set_window_position(0, 0)
         # load html file into the browser
         driver.get('file://' + img.filename("html"))
@@ -689,12 +679,28 @@ def render_figures(code, code_path, output_dir, output_base, context,
     except Exception as err:
         raise PlotError(traceback.format_exc()) from err
 
-    results.append((code, [img]))
-
-    return results
+    return img
 
 
 def run(arguments, content, options, state_machine, state, lineno):
+    logging_path = setup.config.panel_screenshot_logging_path
+    if not logging_path:
+        home_folder = os.path.expanduser("~")
+        logging_path = os.path.join(home_folder, 'selenium/sphinx_panel_screenshot.log')
+    logging_level = setup.config.panel_screenshot_logging_level
+    if not logging_level:
+        logging_level = logging.INFO
+    logging.basicConfig(
+        filename=logging_path,
+        encoding='utf-8',
+        level=logging_level,
+        format='%(levelname)s:%(asctime)s: %(message)s',
+        datefmt='%m/%d/%Y %I:%M:%S %p',
+        filemode="w"
+    )
+    logging.info("sphinx_panel_screenshot: entry run()")
+    logging.info("Options are: %s" % options)
+
     document = state_machine.document
     config = document.settings.env.config
     nofigs = 'nofigs' in options

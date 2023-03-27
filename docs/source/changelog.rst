@@ -1,6 +1,22 @@
 Changelog
 ---------
 
+0.2.0
+=====
+
+* Added ``panel_screenshot_driver_options`` configuration option, which can be
+  used to set an headless driver, or to request the driver to use particular
+  settings.
+
+* **Breaking:** starting from this version, by default the browser is not run
+  in headless mode. User need to set 
+  ``panel_screenshot_driver_options=["--headless"]`` in the configuration file.
+
+* Added ``panel_screenshot_modify_driver`` configuration option.
+
+* Better code organization.
+
+
 0.1.3
 =====
 

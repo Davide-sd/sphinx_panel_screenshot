@@ -67,3 +67,18 @@ panel_screenshot_browser_path = os.path.join(home_folder, "selenium/chrome-linux
 panel_screenshot_driver_path = os.path.join(home_folder, "selenium/drivers/chromedriver")
 panel_screenshot_pdf_from = "small.png"
 panel_screenshot_formats = ["small.png", "large.png", ("pdf", 120), "html"]
+panel_screenshot_driver_options = [
+    "--headless",
+    "--disable-dev-shm-usage",  # overcome limited resource problems
+    "--no-sandbox"              # Bypass OS security model
+]
+
+# panel_screenshot_browser = "firefox"
+# home_folder = os.path.expanduser("~")
+# panel_screenshot_browser_path = os.path.join(home_folder, "selenium/firefox/firefox")
+# panel_screenshot_driver_path = os.path.join(home_folder, "selenium/drivers/geckodriver")
+# panel_screenshot_driver_options = [
+#     "--headless"
+# ]
+# panel_screenshot_pdf_from = "small.png"
+# panel_screenshot_formats = ["small.png", "large.png", ("pdf", 120), "html"]
