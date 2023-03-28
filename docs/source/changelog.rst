@@ -14,6 +14,8 @@ Changelog
 
 * Added ``panel_screenshot_modify_driver`` configuration option.
 
+* Added ``panel_screenshot_postprocess_image`` configuration option.
+
 * Better code organization.
 
 

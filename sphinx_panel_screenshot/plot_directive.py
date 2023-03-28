@@ -131,11 +131,24 @@ The panel-screenshot directive has the following configuration options:
     panel_screenshot_template
         Provide a customized template for preparing restructured text.
     
-    panel_intercept_code : callable
+    panel_screenshot_intercept_code : callable
         A function accepting one argument (the current code block being
         processed), returning a modified code. There might be occasions where
         the programmer needs to performs edits to the code block being
         executed, without the final user to be aware of them.
+    
+    panel_screenshot_postprocess_image : callable
+        A function accepting three arguments, ``f(namespace, size, img)``, and
+        returning a modified image. The arguments:
+        
+        * ``namespace``: a dictionary containing the variables defined in the
+          current code block being processed by sphinx_panel_screenshot, which
+          has already been executed. It can be used to extract Python objects
+          for further processing.
+        * ``size``: the size of the screenshot taken by executing the current
+          code block.
+        * ``img``: the current screenshot of the panel object, of type
+          ``PIL.Image``.
     
     panel_screenshot_small_size : (width, height)
         Specify the width and height of the small-screen screenshot.
@@ -302,12 +315,13 @@ def setup(app):
     app.add_config_value('panel_screenshot_working_directory', None, True)
     app.add_config_value('panel_screenshot_template', None, True)
     app.add_config_value("panel_screenshot_intercept_code", None, True)
+    app.add_config_value("panel_screenshot_postprocess_image", None, True)
     app.add_config_value("panel_screenshot_small_size", None, True)
     app.add_config_value("panel_screenshot_large_size", None, True)
     app.add_config_value("panel_screenshot_browser_path", None, True)
     app.add_config_value("panel_screenshot_driver_path", None, True)
-    app.add_config_value("panel_screenshot_driver_options", None, [])
-    app.add_config_value("panel_screenshot_modify_driver", None, None)
+    app.add_config_value("panel_screenshot_driver_options", [], True)
+    app.add_config_value("panel_screenshot_modify_driver", None, True)
     app.add_config_value("panel_screenshot_browser", None, True)
     app.add_config_value("panel_screenshot_pdf_from", None, True)
     app.add_config_value("panel_screenshot_logging_path", None, True)
@@ -459,6 +473,7 @@ def _run_code(code, code_path, ns=None, function_name=None):
         raise TypeError("`panel_screenshot_intercept_code` must be a function "
             "accepting one argument (the current code block being "
             "processed), returning a modified code.")
+    
     code = assign_last_line_into_variable(intercept_code(code))
 
     # Change the working directory to the directory of the example, so
@@ -604,11 +619,6 @@ def render_figures(code, code_path, output_dir, output_base, context,
     # retrieve the panel object
     panel_obj = ns["mypanel"]
     img = ImageFile(output_base, output_dir)
-    img = create_images(panel_obj, img, config, formats, small_size, large_size)
-    return [(code, [img])]
-
-
-def create_images(panel_obj, img, config, formats, small_size, large_size):
     remove_html_file = not any(k[0] == "html" for k in formats)
     pdf_from = get_pdf_from(config)
 
@@ -618,6 +628,10 @@ def create_images(panel_obj, img, config, formats, small_size, large_size):
     if large_size is None:
         large_size = set_size(
             setup.config.panel_screenshot_large_size, [1280, 960])
+    
+    postprocess_image = lambda ns, size, img: img
+    if setup.config.panel_screenshot_postprocess_image:
+        postprocess_image = setup.config.panel_screenshot_postprocess_image
 
     try:
         # TODO: can it be done better?
@@ -644,6 +658,7 @@ def create_images(panel_obj, img, config, formats, small_size, large_size):
             driver.set_window_size(*small_size)
             png = driver.get_screenshot_as_png()
             pil_image = PILImage.open(BytesIO(png))
+            pil_image = postprocess_image(ns, small_size, pil_image)
             if spng in fmts:
                 dpi = formats[spng]
                 pil_image.save(img.filename(spng), dpi=(dpi, dpi))
@@ -655,6 +670,7 @@ def create_images(panel_obj, img, config, formats, small_size, large_size):
             driver.set_window_size(*large_size)
             png = driver.get_screenshot_as_png()
             pil_image = PILImage.open(BytesIO(png))
+            pil_image = postprocess_image(ns, large_size, pil_image)
             if lpng in fmts:
                 dpi = formats[lpng]
                 pil_image.save(img.filename(lpng), dpi=(dpi, dpi))
@@ -679,7 +695,7 @@ def create_images(panel_obj, img, config, formats, small_size, large_size):
     except Exception as err:
         raise PlotError(traceback.format_exc()) from err
 
-    return img
+    return [(code, [img])]
 
 
 def run(arguments, content, options, state_machine, state, lineno):

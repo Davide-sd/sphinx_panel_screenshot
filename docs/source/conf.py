@@ -82,3 +82,4 @@ panel_screenshot_driver_options = [
 # ]
 # panel_screenshot_pdf_from = "small.png"
 # panel_screenshot_formats = ["small.png", "large.png", ("pdf", 120), "html"]
+
